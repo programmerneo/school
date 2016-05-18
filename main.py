@@ -35,6 +35,7 @@ def main():
     user_courses = []
     user_courses_clean = []
     user_courses_deleted = []
+    good_user_courses = []
 
     # First open sorted csv's and parse data into lists
     for f in sorted(os.listdir(CSV_DIR)):
@@ -51,11 +52,27 @@ def main():
             else:
                 user_courses.extend( _format_data(headers, data) )
 
+    # Next remove duplicates, i.e. updates
+    users = _remove_duplicates('user_id', users)
+    courses = _remove_duplicates('course_id', courses)
+    user_courses = _remove_duplicates_user_courses(user_courses)
+
     # Next remove 'deleted' records
     users_clean, users_delete = _remove_deleted(users)
     courses_clean, courses_deleted = _remove_deleted(courses)
     user_courses_clean, user_courses_deleted = _remove_deleted(user_courses)
 
+    # remove bad records where user or course was deleted
+    good_user_courses = _remove_bad_user_courses(user_courses_clean, users_delete, courses_deleted)
+
+    print 'Good Users'
+    print users_clean
+    print '________________________________________'
+    print 'Good Courses'
+    print courses_clean
+    print '________________________________________'
+    print 'Good User - Courses'
+    print good_user_courses
 
 
 def _format_data(headers, data):
@@ -66,6 +83,25 @@ def _format_data(headers, data):
             data_dict[headers[i]] = col
         data_list.append(data_dict)
     return data_list
+
+
+def _remove_duplicates(key, data):
+    return {rec[key]: rec for rec in data}.values()
+
+
+def _remove_duplicates_user_courses(data):
+    two_keys_dict = {}
+    clean = []
+
+    for rec in data:
+        key = (rec['user_id'], rec['course_id'])
+        two_keys_dict[key] = rec
+        two_keys_dict[key]['state'] = rec['state']
+
+    for k, v in two_keys_dict.iteritems():
+        clean.append(v)
+
+    return clean
 
 
 def _remove_deleted(original):
@@ -79,5 +115,17 @@ def _remove_deleted(original):
 
     return clean, deleted
 
+
+def _remove_bad_user_courses(user_courses_clean, users_deleted, courses_deleted):
+    good_user_courses = []
+
+    users_delete_list = [u_d['user_id'] for u_d in users_deleted]
+    courses_deleted_list = [c_d['course_id'] for c_d in courses_deleted]
+
+    for u_c_c in user_courses_clean:
+        if u_c_c['user_id'] != users_delete_list and u_c_c['course_id'] != courses_deleted_list:
+            good_user_courses.append(u_c_c)
+
+    return good_user_courses
 
 main()

@@ -74,6 +74,8 @@ def main():
     print 'Good User - Courses'
     print good_user_courses
 
+    _print_output(users_clean, courses_clean, good_user_courses)
+
 
 def _format_data(headers, data):
     data_list = []
@@ -128,4 +130,15 @@ def _remove_bad_user_courses(user_courses_clean, users_deleted, courses_deleted)
 
     return good_user_courses
 
+def _print_output(users_clean, courses_clean, good_user_courses):
+    course_list = [c['course_id'] for c in good_user_courses]
+    user_list = [u['user_id'] for u in good_user_courses]
+    for c in courses_clean:
+        if c['course_id'] in course_list:
+            print '________________________________________'
+            print c['course_name']
+            print '________________________________________'
+            for u in users_clean:
+                if u['user_id'] in user_list:
+                    print u['user_name']
 main()
